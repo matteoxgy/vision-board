@@ -57,6 +57,7 @@
             <div
               class="rotate-handle"
               @mousedown.stop="(e) => startRotating(e, index)"
+              @touchstart.stop="(e) => startRotating(e, index)"
             >
               ⟲
             </div>
@@ -251,11 +252,15 @@ const updateSize = (index, x, y, width, height) => {
   };
 };
 
-// 开始旋转的处理函数
+// 修改开始旋转的处理函数
 const startRotating = (event, index) => {
   event.stopPropagation();
   isRotating.value = true;
   const item = boardItems[index];
+
+  // 获取触摸或鼠标事件的坐标
+  const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+  const clientY = event.touches ? event.touches[0].clientY : event.clientY;
 
   // 获取元素中心点
   const rect = event.target.parentElement.getBoundingClientRect();
@@ -263,21 +268,19 @@ const startRotating = (event, index) => {
   const centerY = rect.top + rect.height / 2;
 
   // 计算初始角度
-  const startAngle =
-    (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) /
-    Math.PI;
-
+  const startAngle = (Math.atan2(clientY - centerY, clientX - centerX) * 180) / Math.PI;
   rotationStartAngle.value = startAngle - (item.rotation || 0);
 
-  // 添加鼠标移动和松开事件监听
-  const handleMouseMove = (e) => {
+  // 处理移动事件的函数
+  const handleMove = (e) => {
+    e.preventDefault();
     if (!isRotating.value) return;
 
-    const angle =
-      (Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180) / Math.PI;
-
+    const moveX = e.touches ? e.touches[0].clientX : e.clientX;
+    const moveY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const angle = (Math.atan2(moveY - centerY, moveX - centerX) * 180) / Math.PI;
     let newRotation = angle - rotationStartAngle.value;
-    // 将角度规范化到 0-360 度
     newRotation = ((newRotation % 360) + 360) % 360;
 
     boardItems[index] = {
@@ -286,14 +289,20 @@ const startRotating = (event, index) => {
     };
   };
 
-  const handleMouseUp = () => {
+  // 处理结束事件的函数
+  const handleEnd = () => {
     isRotating.value = false;
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
+    document.removeEventListener("mousemove", handleMove);
+    document.removeEventListener("mouseup", handleEnd);
+    document.removeEventListener("touchmove", handleMove);
+    document.removeEventListener("touchend", handleEnd);
   };
 
-  document.addEventListener("mousemove", handleMouseMove);
-  document.addEventListener("mouseup", handleMouseUp);
+  // 添加事件监听器
+  document.addEventListener("mousemove", handleMove);
+  document.addEventListener("mouseup", handleEnd);
+  document.addEventListener("touchmove", handleMove, { passive: false });
+  document.addEventListener("touchend", handleEnd);
 };
 </script>
 
