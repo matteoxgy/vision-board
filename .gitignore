@@ -1,1 +1,15 @@
-
+node_modules
+.idea/
+.vscode/
+.DS_Store
+.env
+.env.example
+.env.testing
+.env.local
+.env.local.example
+.env.local.testing
+.env.local.testing.example
+.env.local.testing.example.example
+.env.local.testing.example.example.example
+.env.local.testing.example.example.example.example
+.env.local.testing.example.example.example.example.example

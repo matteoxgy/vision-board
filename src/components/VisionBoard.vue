@@ -1,5 +1,6 @@
 <template>
-  <div class="vision-board">
+  <!-- 将工具栏移到愿景板外部 -->
+  <div class="vision-board-container">
     <div class="toolbar">
       <label class="upload-button">
         <input
@@ -16,80 +17,82 @@
       </span>
     </div>
 
-    <div class="board-container">
-      <!-- 愿景板主区域 -->
-      <div class="board" ref="boardRef">
-        <vue-draggable-resizable
-          v-for="(item, index) in boardItems"
-          :key="index"
-          :x="item.x"
-          :y="item.y"
-          :w="item.width"
-          :h="item.height"
-          :draggable="true"
-          :resizable="true"
-          :lock-aspect-ratio="true"
-          :min-width="50"
-          :min-height="50"
-          :aspect-ratio="item.originalWidth / item.originalHeight"
-          @activated="selectedIndex = index"
-          @deactivated="selectedIndex = -1"
-          @dragstop="(x, y) => updatePosition(index, x, y)"
-          @resizestop="
-            (x, y, width, height) => updateSize(index, x, y, width, height)
-          "
-          :style="{
-            transform: `rotate(${item.rotation}deg)`,
-            transformOrigin: 'center center',
-          }"
-        >
-          <div
-            class="image-container"
+    <div class="vision-board">
+      <div class="board-container">
+        <!-- 愿景板主区域 -->
+        <div class="board" ref="boardRef">
+          <vue-draggable-resizable
+            v-for="(item, index) in boardItems"
+            :key="index"
+            :x="item.x"
+            :y="item.y"
+            :w="item.width"
+            :h="item.height"
+            :draggable="true"
+            :resizable="true"
+            :lock-aspect-ratio="true"
+            :min-width="50"
+            :min-height="50"
+            :aspect-ratio="item.originalWidth / item.originalHeight"
+            @activated="selectedIndex = index"
+            @deactivated="selectedIndex = -1"
+            @dragstop="(x, y) => updatePosition(index, x, y)"
+            @resizestop="
+              (x, y, width, height) => updateSize(index, x, y, width, height)
+            "
             :style="{
-              transform: `rotate(${item.rotation}deg), transformOrigin: 'center center'`,
+              transform: `rotate(${item.rotation}deg)`,
+              transformOrigin: 'center center',
             }"
           >
-            <img
-              :src="item.imageUrl"
-              :alt="'Vision item ' + index"
-              class="draggable-item"
-            />
             <div
-              class="rotate-handle"
-              @mousedown.stop="(e) => startRotating(e, index)"
-              @touchstart.stop="(e) => startRotating(e, index)"
+              class="image-container"
+              :style="{
+                transform: `rotate(${item.rotation}deg), transformOrigin: 'center center'`,
+              }"
             >
-              ⟲
+              <img
+                :src="item.imageUrl"
+                :alt="'Vision item ' + index"
+                class="draggable-item"
+              />
+              <div
+                class="rotate-handle"
+                @mousedown.stop="(e) => startRotating(e, index)"
+                @touchstart.stop="(e) => startRotating(e, index)"
+              >
+                ⟲
+              </div>
             </div>
-          </div>
-        </vue-draggable-resizable>
+          </vue-draggable-resizable>
+        </div>
       </div>
-    </div>
 
-    <!-- 裁剪弹窗 -->
-    <div v-if="showCropper" class="cropper-modal">
-      <div class="cropper-container">
-        <vue-cropper
-          ref="cropperRef"
-          :img="selectedImage"
-          :aspect-ratio="NaN"
-          :auto-crop="true"
-          :center-box="true"
-          :output-size="1"
-          :output-type="'png'"
-          :info="true"
-          :full="false"
-          :can-move="true"
-          :can-scale="true"
-          :high="true"
-          :mode="'contain'"
-          style="width: 500px; height: 400px"
-          @ready="cropperReady"
-          @error="(e) => console.error('裁剪器错误:', e)"
-        />
-        <div class="cropper-buttons">
-          <button @click="confirmCrop">确认</button>
-          <button @click="cancelCrop">取消</button>
+      <!-- 裁剪弹窗 -->
+      <div v-if="showCropper" class="cropper-modal">
+        <div class="cropper-container">
+          <vue-cropper
+            ref="cropperRef"
+            :img="selectedImage"
+            :aspect-ratio="NaN"
+            :auto-crop="true"
+            :center-box="true"
+            :output-size="1"
+            :output-type="'png'"
+            :info="true"
+            :full="false"
+            :can-move="true"
+            :can-scale="true"
+            :high="true"
+            :mode="'contain'"
+            style="width: 500px; height: 400px"
+            @ready="cropperReady"
+            @error="(e) => console.error('裁剪器错误:', e)"
+          />
+          <div class="cropper-buttons">
+            <button @click="confirmCrop">确认</button>
+            <button @click="cancelCrop">取消</button>
+          </div>
         </div>
       </div>
     </div>
@@ -174,7 +177,7 @@ const confirmCrop = () => {
     if (data) {
       const img = new Image();
       img.onload = () => {
-        const maxSize = 200;
+        const maxSize = window.innerWidth <= 768 ? 150 : 200; // 移动端缩小最大尺寸
         let width = img.width;
         let height = img.height;
 
@@ -191,8 +194,8 @@ const confirmCrop = () => {
           }
         }
 
-        const boardWidth = 800;
-        const boardHeight = 600;
+        const boardWidth = window.innerWidth <= 768 ? window.innerWidth - 32 : 800;
+        const boardHeight = window.innerWidth <= 768 ? window.innerHeight - 150 : 600;
         const x = (boardWidth - width) / 2;
         const y = (boardHeight - height) / 2;
 
@@ -307,15 +310,109 @@ const startRotating = (event, index) => {
 </script>
 
 <style scoped>
+.vision-board-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* 修改工具栏样式 */
+.toolbar {
+  width: 800px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* 修改响应式样式 */
+@media screen and (max-width: 768px) {
+  .vision-board-container {
+    padding: 10px;
+  }
+
+  .toolbar {
+    width: calc(100vw - 32px);
+    padding: 12px;
+  }
+
+  .vision-board {
+    width: calc(100vw - 32px) !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .vision-board-container {
+    padding: 8px;
+  }
+
+  .toolbar {
+    padding: 8px;
+  }
+}
+
 .vision-board {
   width: 800px;
   height: 600px;
+  margin: 0 auto;
   position: relative;
   overflow: hidden;
-  border: 1px solid #ddd;
-  border-radius: 8px;
   background: white;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  /* 添加木纹边框效果 */
+  border: 25px solid;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #7c5c3c,
+    #8b6e4c 10px,
+    #6b4c2c 10px,
+    #7c5c3c 20px
+  ) 25;
+  box-shadow: 
+    0 0 0 2px rgba(101, 67, 33, 0.6),
+    inset 0 0 20px rgba(0, 0, 0, 0.2),
+    0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.board-container {
+  width: 100%;
+  height: calc(100vh - 100px);
+  border: 2px dashed #8b6e4c;
+  position: relative;
+  overflow: hidden;
+  background: 
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0.3)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      #f4e4bc,
+      #f4e4bc 2px,
+      #f8ecd4 2px,
+      #f8ecd4 4px
+    );
+}
+
+/* 添加响应式媒体查询 */
+@media screen and (max-width: 768px) {
+  .vision-board {
+    border-width: 15px;
+    padding: 15px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .vision-board {
+    border-width: 10px;
+    padding: 10px;
+  }
 }
 
 .toolbar {
@@ -357,14 +454,6 @@ const startRotating = (event, index) => {
   animation: spin 1s linear infinite;
 }
 
-.board-container {
-  width: 100%;
-  height: calc(100vh - 100px);
-  border: 2px dashed #ccc;
-  position: relative;
-  overflow: hidden;
-}
-
 .board {
   width: 100%;
   height: 100%;
@@ -388,8 +477,10 @@ const startRotating = (event, index) => {
   background: white;
   padding: 24px;
   border-radius: 12px;
-  min-width: 600px;
-  min-height: 500px;
+  min-width: min(600px, 90vw);
+  min-height: min(500px, 80vh);
+  width: 90%;
+  max-width: 600px;
   display: flex;
   flex-direction: column;
   align-items: center;
